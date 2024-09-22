@@ -25,6 +25,11 @@ def get_market_ticker(date_time: datetime.datetime,
         Realm. 0 for Magnates, 1 for Enterprineurs.
     get_last_marker: bool (default is False)
         Whether to correct given date_time to last available time marker, otherwise raise error if marker is not available.
+    
+    Returns
+    ---------
+    market_ticker: list[dict[str, str]]
+        List containing data of each game resource's price
     """
     def _get_time_marker(date_time: datetime.datetime):
         """Get current time marker in format '%Y-%m-%dT%H:%M:%S.%fZ', truncating to milliseconds"""
