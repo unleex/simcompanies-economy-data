@@ -1,30 +1,21 @@
-import google.auth
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+import datetime
+import json
 
-GOOGLE_SHEET_NAME = "Sim companies economy data"
+import simcompanies_api
 
+import pandas as pd
 
-def create(title: str):
-  """
-  Creates the Sheet the user has access to.
-  Load pre-authorized user credentials from the environment.
-  """
-  creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive.file"])
-  try:
-    service = build("sheets", "v4", credentials=creds)
-    spreadsheet = {"properties": {"title": title}}
-    spreadsheet = (
-        service.spreadsheets()
-        .create(body=spreadsheet, fields="spreadsheetId")
-        .execute()
-    )
-    print(f"Spreadsheet ID: {(spreadsheet.get('spreadsheetId'))}")
-    return spreadsheet.get("spreadsheetId")
-  except HttpError as error:
-    print(f"An error occurred: {error}")
-    return error
+with open("product_id_to_name.json", "r") as fp:
+    product_id_to_name: dict[str, str] = json.load(fp)
+with open("market_ticker", 'r') as f:
+    market_ticker: list[dict[str, str]] = eval(f.read())
 
+names: list[str] = []
+prices: list[int] = []
+for product in market_ticker:
+    print(product)
+    names.append(product_id_to_name[str(product["kind"])])
+    prices.append(int(product["price"]))
 
-if __name__ == "__main__":
-  create(GOOGLE_SHEET_NAME)
+df = pd.DataFrame({"Name": names, "Price": prices})
+df.to_csv("exchange_prices.csv")

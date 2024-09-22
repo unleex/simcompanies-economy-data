@@ -1,4 +1,5 @@
 import datetime
+from http.client import HTTPException
 import requests
 from typing import *
 
@@ -24,8 +25,8 @@ def get_market_ticker(date_time: datetime.datetime,
     realm: Literal[0, 1]
         Realm. 0 for Magnates, 1 for Enterprineurs.
     get_last_marker: bool (default is False)
-        Whether to correct given date_time to last available time marker, otherwise raise error if marker is not available.
-    
+        Whether to correct given date_time to last available time marker, 
+        otherwise raise error if marker is not available for current time.
     Returns
     ---------
     market_ticker: list[dict[str, str]]
@@ -41,7 +42,7 @@ def get_market_ticker(date_time: datetime.datetime,
     time_marker = _get_time_marker(date_time)
     response = requests.get(f"https://www.simcompanies.com/api/v2/market-ticker/{realm}/{time_marker}/")
     if response.status_code != 200:
-        raise SimcompaniesAPIError()
+        raise HTTPException("Failed to get market ticker")
     if not response.json():
         raise SimcompaniesAPIError(f"Found no data for realm {realm} at {time_marker}")
     
