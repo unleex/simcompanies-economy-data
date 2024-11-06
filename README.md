@@ -4,4 +4,3 @@ This project offers relevant market data of SimCompanies, arranged in clear and 
 **Currently project is just an idea, you can find it at: https://miro.com/app/board/uXjVLKbQ1Nc=/
 
 If you want to contribute, please consider reaching me directly in SimCompanies: https://www.simcompanies.com/company/0/Worldwide%20Construction/
-
