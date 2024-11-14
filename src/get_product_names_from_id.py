@@ -10,5 +10,5 @@ for product in get_market_ticker(date_time=datetime.datetime.today(), realm=0, g
     name = image_name[image_name.rfind('/') + 1 : image_name.find('.')]
     product_id_to_name[id_] = name
 
-with open("product_id_to_name.json", "w") as fp:
+with open("saved_data/product_id_to_name.json", "w") as fp:
     json.dump(dict(sorted(product_id_to_name.items(), key=lambda x: int(x[0]))), fp, indent="\t")

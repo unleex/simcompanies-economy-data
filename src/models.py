@@ -25,7 +25,7 @@ class MarketGraphWindow(QMainWindow):
         """
         super().__init__()
         self.graph: Graph = graph
-        self.product_id_to_name: dict[int, str] = utils.load_json_keys_to_int("product_id_to_name.json") # type: ignore
+        self.product_id_to_name: dict[int, str] = utils.load_json_keys_to_int("saved_data/product_id_to_name.json") # type: ignore
     
 
     def _get_graph_max_depth(self,graph: Graph) -> int:

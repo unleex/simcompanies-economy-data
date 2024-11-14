@@ -89,10 +89,10 @@ def get_VWAPs(
         if response.status_code != 200:
             raise HTTPException("Failed to get VWAPS")
         vwap_data = response.json()
-        with open("vwap_data.json", "w") as f:
+        with open("saved_data/vwap_data.json", "w") as f:
             json.dump(vwap_data, f, indent='\t')
     else:
-        with open("vwap_data.json") as f:
+        with open("saved_data/vwap_data.json") as f:
             vwap_data = json.load(f)
     vwaps: list[dict] = list(filter(lambda x: x["quality"] == quality, vwap_data["vwaps"]))
     if resource_ids is not None:
@@ -140,10 +140,10 @@ def get_resources_info(
         if response.status_code != 200:
             raise HTTPException(f"Failed to get resources info: {response.status_code}")
         resources_info = response.json()
-        with open("resources_info.json", "w") as f:
-            json.dump(resources_info, open("resources_info.json", "w"), indent='\t')
+        with open("saved_data/resources_info.json", "w") as f:
+            json.dump(resources_info, open("saved_data/resources_info.json", "w"), indent='\t')
     else: 
-        resources_info = utils.load_json_keys_to_int("resources_info.json")
+        resources_info = utils.load_json_keys_to_int("saved_data/resources_info.json")
     
     resources: list = resources_info["resources"]
     metadata: dict = resources_info["metadata"]
@@ -190,7 +190,7 @@ def get_PPHPLs(
         resource_ids = [resource_ids]
     pphpls: dict[int, float] = {}
     if not update:
-        pphpls = utils.load_json_keys_to_int("pphpls.json") # type: ignore
+        pphpls = utils.load_json_keys_to_int("saved_data/pphpls.json") # type: ignore
             
         if resource_ids is not None:
             pphpls = dict(utils.select_included(pphpls, resource_ids, lambda x: x[0])) # type: ignore
@@ -218,7 +218,7 @@ def get_PPHPLs(
         wages: int = resource_data["wages"]
         pphpl: float = (vwap - sum(input_prices)) * production_speed - wages * (1 + admin_overhead)
         pphpls[resource_data["id"]] = pphpl
-    with open("pphpls.json", "w") as f:
+    with open("saved_data/pphpls.json", "w") as f:
         json.dump(pphpls, f, indent='\t')
     pphpls = dict(utils.select_included(pphpls.items(), resource_ids, mapping=lambda x: x[0])) # type: ignore
     not_found = set(resource_ids) - set(pphpls) # type: ignore
