@@ -193,7 +193,7 @@ def get_PPHPLs(
         pphpls = utils.load_json_keys_to_int("saved_data/pphpls.json") # type: ignore
             
         if resource_ids is not None:
-            pphpls = dict(utils.select_included(pphpls, resource_ids, lambda x: x[0])) # type: ignore
+            pphpls = dict(utils.select_included(pphpls.items(), resource_ids, lambda x: x[0])) # type: ignore
             not_found = set(resource_ids) - set(pphpls)# type: ignore
             if not_found:
                 raise KeyError(f"{','.join(list(map(str,not_found)))} not found in pphpls") # type: ignore
