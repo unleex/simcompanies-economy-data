@@ -54,13 +54,14 @@ class Button(QPushButton):
     def change_text_color(self, color: tuple[int, int, int]):
         """
         Change text color of the button
+
         Parameters
         ----------
         color: tuple[int, int, int]
             RGB color to switch to
         """
         hex_color = '%02x%02x%02x' % color
-        self.stylesheet["color"] = hex_color
+        self.stylesheet["color"] = "#" + hex_color
         self.setStyleSheet(str(self.stylesheet))
 
 
@@ -251,4 +252,6 @@ class MarketGraphWindow(QMainWindow):
             button = Button(self.product_id_to_name[id], self)
             color = self._get_mapped_red_to_green_color(pphpls[int(id)], 0, max_value)
             button.change_background_color(color)
+            if (color[0] + color[1]) > 255:
+                button.change_text_color((0, 0, 0))
             button.move(*position)
