@@ -1,13 +1,67 @@
 import simcompanies_api
 import utils
 
-from typing import TypeAlias
+from typing import TypeAlias, Optional
 
 from PyQt6.QtCore import QSize
-from PyQt6.QtWidgets import (QMainWindow, QPushButton)
+from PyQt6.QtWidgets import (QMainWindow, QPushButton, QWidget)
 
 
 Graph: TypeAlias = dict[int, dict]
+
+
+class StyleSheet(dict):
+    def __init__(self, stylesheet: Optional[str] = None):
+        super().__init__()
+        if not stylesheet:
+            self.type: str = "null"
+            return 
+        self.type = stylesheet[:stylesheet.find("{")].strip()
+        parameters: str = stylesheet[stylesheet.find("{") + 1: stylesheet.rfind("}")]
+        if not parameters.replace(" ", ""):
+            return
+        for parameter in parameters.split(";"):
+            key = parameter[parameter.find(':'):].strip()
+            value = parameter[:parameter.find(':')].strip()
+            self[key] = value
+
+    
+    def __str__(self):
+        return self.type + "{" + ' '.join([f"{key}: {value};" for key, value in self.items()]) + "}"
+
+
+class Button(QPushButton):
+
+    def __init__(self, text: Optional[str] = None, parent: Optional[QWidget] = None):
+        super().__init__(text=text, parent=parent)
+        self.stylesheet = StyleSheet("QPushButton {}")
+    
+
+    def change_background_color(self, color: tuple[int, int, int]) -> None:
+        """
+        Change background color of the button
+
+        Parameters
+        ----------
+        color: tuple[int, int, int]
+            RGB color to switch to
+        """
+        hex_color = '%02x%02x%02x' % color
+        self.stylesheet["background-color"] = "#" + hex_color
+        self.setStyleSheet(str(self.stylesheet))
+    
+
+    def change_text_color(self, color: tuple[int, int, int]):
+        """
+        Change text color of the button
+        Parameters
+        ----------
+        color: tuple[int, int, int]
+            RGB color to switch to
+        """
+        hex_color = '%02x%02x%02x' % color
+        self.stylesheet["color"] = hex_color
+        self.setStyleSheet(str(self.stylesheet))
 
 
 class MarketGraphWindow(QMainWindow):
@@ -177,22 +231,6 @@ class MarketGraphWindow(QMainWindow):
         red = max(0, 255 - pos)
         return (red, green, blue)
 
-    
-    def _change_button_color(self, button: QPushButton, color: tuple[int, int, int]) -> None:
-        """
-        Change color of the button in-place
-        Parameters
-        ----------
-        button: QPushButton
-            Button to change color of
-        color: tuple[int, int, int]
-            RGB color to switch to
-        """
-        stylesheet_template: str = "QPushButton {background-color: #<color>;}"
-        hex_color = '%02x%02x%02x' % color
-        stylesheet = stylesheet_template.replace("<color>", hex_color)
-        button.setStyleSheet(stylesheet)
-
 
     def render_graph(self, update: bool = False) -> None:
         """
@@ -210,7 +248,7 @@ class MarketGraphWindow(QMainWindow):
         max_value: float = max(pphpls.values())
 
         for id, position in positions.items():
-            button = QPushButton(self.product_id_to_name[id], self)
+            button = Button(self.product_id_to_name[id], self)
             color = self._get_mapped_red_to_green_color(pphpls[int(id)], 0, max_value)
-            self._change_button_color(button, color)
+            button.change_background_color(color)
             button.move(*position)
