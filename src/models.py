@@ -252,6 +252,6 @@ class MarketGraphWindow(QMainWindow):
             button = Button(self.product_id_to_name[id], self)
             color = self._get_mapped_red_to_green_color(pphpls[int(id)], 0, max_value)
             button.change_background_color(color)
-            if (color[0] + color[1]) > 255:
+            if (color[0] + color[1]) > 255 / 2:
                 button.change_text_color((0, 0, 0))
             button.move(*position)
