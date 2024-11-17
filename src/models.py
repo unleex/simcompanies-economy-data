@@ -3,11 +3,16 @@ import utils
 
 from typing import TypeAlias, Optional
 
-from PyQt6.QtCore import QSize
-from PyQt6.QtWidgets import (QMainWindow, QPushButton, QWidget)
+from PyQt6.QtGui import QWheelEvent
+from PyQt6.QtCore import QSize, QPoint
+from PyQt6.QtWidgets import (QMainWindow, QPushButton, QWidget, QLabel)
 
 
 Graph: TypeAlias = dict[int, dict]
+
+# zoom rate = 1 + pixels scrolled * zoom speed
+ZOOM_SPEED = 0.25
+MIN_WINDOW_SIZE = QSize(100, 100)
 
 
 class StyleSheet(dict):
@@ -65,10 +70,53 @@ class Button(QPushButton):
         self.setStyleSheet(str(self.stylesheet))
 
 
-class MarketGraphWindow(QMainWindow):
+
+class MainWindow(QMainWindow):
+
+    def __init__(self, size: QSize):
+        super().__init__()
+        self.resize(size)
+        self.max_size = size
+    
+
+    def wheelEvent(self, event: QWheelEvent | None):
+
+        if not event:
+            return
+        inverted = -1 if event.inverted() else 1
+        num_degrees_y: float = event.angleDelta().y() / 8 * inverted
+        mouse_pos = event.position()
+        zoom_rate = (1 + num_degrees_y * ZOOM_SPEED)
+        if zoom_rate:
+            self.zoom(
+                mouse_pos.toPoint(), 
+                zoom_rate, 
+                min_size=MIN_WINDOW_SIZE,
+                max_size=self.max_size)
+        event.accept()
+
+    
+    def zoom(self, center: QPoint, rate: float, min_size: QSize, max_size: QSize):
+        center_: tuple[int, int] = (center.x(), center.y())
+        current_size: tuple[int, int] = (self.size().width(), self.size().height())
+        new_size: tuple[int, int] = round(current_size[0] / rate), round(current_size[1] / rate)
+        if (new_size[0] < min_size.width() or new_size[1] < min_size.height()
+            or
+            new_size[0] > max_size.width() or new_size[1] > max_size.height()):
+            return
+        print(f"{new_size=} {center_=}")
+        self.setGeometry(
+            center_[0] - new_size[0] // 2,
+            center_[1] - new_size[1] // 2,
+            new_size[0],
+            new_size[1]
+        )
+
+
+class MarketGraphWindow(MainWindow):
     """Represents UI of market graph"""
     def __init__(
-            self, graph: Graph
+            self, graph: Graph, size: QSize
         ):
         """
         Parameters
@@ -78,9 +126,10 @@ class MarketGraphWindow(QMainWindow):
             In this dictionary, keys are input products for their values.
             Products in list values are end products, meaning they can't be used as input.
         """
-        super().__init__()
+        super().__init__(size)
         self.graph: Graph = graph
         self.product_id_to_name: dict[int, str] = utils.load_json_keys_to_int("saved_data/product_id_to_name.json") # type: ignore
+        self.max_size = self.size()
     
 
     def _get_graph_max_depth(self,graph: Graph) -> int:
