@@ -24,7 +24,7 @@ graph: dict[int, dict] = {
 
 
 if __name__ == "__main__":
-    is_first_render: bool = True
+    is_first_render: bool = False
     app: QApplication = QApplication(sys.argv)
     window: MarketGraphWindow = MarketGraphWindow(graph=graph)
     window.render_graph(is_first_render)

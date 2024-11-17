@@ -176,63 +176,6 @@ class MarketGraphWindow(QMainWindow):
         return item_positions
 
 
-    def _get_mapped_red_to_green_color(self, value: float, min_value: float, max_value: float) -> tuple[int, int, int]:
-        """
-        Get color of a value in range [min, max] based on assigned color spectrum from red to
-        green to given [min, max] range, where purest red is min, and green is max value. 
-        
-        Parameters
-        ----------
-        value: float
-            Value to define color of
-        min_value: float
-            Minimum value to map to
-        max_value: float
-            Maximum value to map to
-
-        Returns
-        ---------
-        color: tuple[int, int, int]
-            Mapped color.
-
-        Examples
-        ----------
-        value=100
-        min_value=0
-        max_value=100
-
-        result: (0, 255, 0) # purest green
-        ---------
-        value=0
-        min_value=0
-        max_value=100
-
-        result: (255, 0, 0) # purest red
-        -------------------
-        value=50
-        min_value=0
-        max_value=100
-
-        result: (255, 255, 0) # purest yellow
-        """
-        if max_value < min_value:
-            raise ValueError(
-                f"Max value is less than min value ({max_value} < {min_value})"
-            )
-        if value < min_value or value > max_value:
-            raise ValueError(
-                f"Value {value:.2f} is out of [min,max] range [{min_value:.2f}, {max_value:.2f}]"
-            )
-        
-        blue = 0
-        # 256 * 2 - from green to red
-        step = 255 * 2 / (max_value - min_value)
-        pos: int = round(value * step)
-        green = max(0, pos - 255)
-        red = max(0, 255 - pos)
-        return (red, green, blue)
-
-
     def render_graph(self, update: bool = False) -> None:
         """
         Render items of the graph as buttons on window
@@ -250,7 +193,7 @@ class MarketGraphWindow(QMainWindow):
 
         for id, position in positions.items():
             button = Button(self.product_id_to_name[id], self)
-            color = self._get_mapped_red_to_green_color(pphpls[int(id)], 0, max_value)
+            color = utils.get_mapped_red_to_green_color(pphpls[int(id)], 0, max_value)
             button.change_background_color(color)
             if (color[0] + color[1]) > 255 / 2:
                 button.change_text_color((0, 0, 0))

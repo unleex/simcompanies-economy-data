@@ -56,3 +56,60 @@ def select_included(l: Iterable, a: Iterable, mapping: Optional[Callable] = None
     """
     mapping_: Callable = (lambda x: x) if mapping is None else mapping # type: ignore
     return filter(lambda x: mapping_(x) in a, l) # type: ignore[operator, arg-type]
+
+
+def get_mapped_red_to_green_color(value: float, min_value: float, max_value: float) -> tuple[int, int, int]:
+        """
+        Get color of a value in range [min, max] based on assigned color spectrum from red to
+        green to given [min, max] range, where purest red is min, and green is max value. 
+        
+        Parameters
+        ----------
+        value: float
+            Value to define color of
+        min_value: float
+            Minimum value to map to
+        max_value: float
+            Maximum value to map to
+
+        Returns
+        ---------
+        color: tuple[int, int, int]
+            Mapped color.
+
+        Examples
+        ----------
+        value=100
+        min_value=0
+        max_value=100
+
+        result: (0, 255, 0) # purest green
+        ---------
+        value=0
+        min_value=0
+        max_value=100
+
+        result: (255, 0, 0) # purest red
+        -------------------
+        value=50
+        min_value=0
+        max_value=100
+
+        result: (255, 255, 0) # purest yellow
+        """
+        if max_value < min_value:
+            raise ValueError(
+                f"Max value is less than min value ({max_value} < {min_value})"
+            )
+        if value < min_value or value > max_value:
+            raise ValueError(
+                f"Value {value:.2f} is out of [min,max] range [{min_value:.2f}, {max_value:.2f}]"
+            )
+        
+        blue = 0
+        # 256 * 2 - from green to red
+        step = 255 * 2 / (max_value - min_value)
+        pos: int = round(value * step)
+        green = max(0, pos - 255)
+        red = max(0, 255 - pos)
+        return (red, green, blue)
