@@ -2,7 +2,7 @@ import simcompanies_api
 import utils
 
 from PyQt6.QtCore import Qt
-from typing import TypeAlias, Optional
+from typing import TypeAlias, Optional, Any
 from PyQt6.QtGui import QWheelEvent, QMouseEvent
 from PyQt6.QtCore import QSize, QPoint
 from PyQt6.QtWidgets import (QMainWindow, QPushButton, QWidget)
@@ -37,20 +37,35 @@ class StyleSheet(dict):
         
 
         self.type = stylesheet[:stylesheet.find("{")].strip()
-        parameters: str = stylesheet[stylesheet.find("{") + 1: stylesheet.rfind("}")]
-        if not parameters.replace(" ", ""):
-            return
-        
+        parameters: str = stylesheet[stylesheet.find("{") + 1: stylesheet.find("}")].strip()
+        properties = stylesheet[stylesheet.find("}") + 1:].strip()
 
-        for parameter in parameters.split(";"):
-            key = parameter[parameter.find(':'):].strip()
-            value = parameter[:parameter.find(':')].strip()
-            self[key] = value
+        for parameter in parameters.strip().split(";"):
+            key = parameter[:parameter.find(':')].strip()
+            value = parameter[parameter.find(':') + 1:].strip()
+            # avoid empty parameters
+            if key and value:
+                self[key] = value
 
-    
+        self.properties: dict[str, dict[str, Any]] = {}
+        while properties.strip():
+            property_ = properties[properties.find(":") + 1: properties.find("{")].strip()
+            property_parameters = properties[properties.find("{") + 1: properties.find("}")]
+            self.properties[property_] = {}
+            for property_parameter in property_parameters.strip().split(";"):
+                key = property_parameter[:property_parameter.find(':') ].strip()
+                value = property_parameter[property_parameter.find(':') + 1:].strip()
+                if key and value:
+                    self.properties[property_][key] = value
+            properties = properties[properties.find("}") + 1:]
+
+
     def __str__(self):
-
-        return self.type + "{" + ' '.join([f"{key}: {value};" for key, value in self.items()]) + "}"
+        ret = f"{self.type} {'{'}\n{' '.join([f"\t{key}: {value};\n" for key, value in self.items()])}{'}'}"
+        for property_name, property_parameters in self.properties.items():
+            ret += f"\n{self.type}:{property_name}" \
+                   f"{'{'}\n{' '.join([f"\t{key}: {value};\n" for key, value in property_parameters.items()])}\n{'}'}"
+        return ret
 
 
 class Button(QPushButton):
@@ -132,7 +147,6 @@ class MainWindow(QMainWindow):
             pos = widget.pos()
             new_pos = pos - movement * move_speed
             widget.move(new_pos)
-        
 
 
     def wheelEvent(self, event: QWheelEvent | None):
