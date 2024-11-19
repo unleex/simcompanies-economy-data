@@ -30,8 +30,9 @@ if __name__ == "__main__":
     zoomed_app: QApplication = QApplication(sys.argv)
     window: MarketGraphWindow = MarketGraphWindow(
         graph=graph,
-        size=QSize(480, 360)
+        size=QSize(1280, 720)
         )
+    # window.setFixedSize(QSize(1280, 720))
     window.render_graph(is_first_render)
     is_first_render = False
     window.show()

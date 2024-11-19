@@ -1,30 +1,47 @@
 import simcompanies_api
 import utils
 
+from PyQt6.QtCore import Qt
 from typing import TypeAlias, Optional
-
-from PyQt6.QtGui import QWheelEvent
+from PyQt6.QtGui import QWheelEvent, QMouseEvent
 from PyQt6.QtCore import QSize, QPoint
-from PyQt6.QtWidgets import (QMainWindow, QPushButton, QWidget, QLabel)
+from PyQt6.QtWidgets import (QMainWindow, QPushButton, QWidget)
 
 
 Graph: TypeAlias = dict[int, dict]
 
-# zoom rate = 1 + pixels scrolled * zoom speed
-ZOOM_SPEED = 0.25
 MIN_WINDOW_SIZE = QSize(100, 100)
+MOVE_SPEED = 0.7
+ZOOM_IN_SPEED = 1 - 0.2
+ZOOM_OUT_SPEED = 1 + 0.2
+
+
+def scroll_degrees_y_to_zoom_rate(
+        scroll_degrees_y: float,
+        zoom_in_speed: float, 
+        zoom_out_speed: float
+    ) -> float:
+    """Get zoom rate from mouse move distance on y axis"""
+    if scroll_degrees_y < 0:
+        return zoom_in_speed
+    return zoom_out_speed   
 
 
 class StyleSheet(dict):
+    """PyQt6 stylesheet arranged in dictionary for key-value access"""
     def __init__(self, stylesheet: Optional[str] = None):
         super().__init__()
         if not stylesheet:
             self.type: str = "null"
             return 
+        
+
         self.type = stylesheet[:stylesheet.find("{")].strip()
         parameters: str = stylesheet[stylesheet.find("{") + 1: stylesheet.rfind("}")]
         if not parameters.replace(" ", ""):
             return
+        
+
         for parameter in parameters.split(";"):
             key = parameter[parameter.find(':'):].strip()
             value = parameter[:parameter.find(':')].strip()
@@ -32,6 +49,7 @@ class StyleSheet(dict):
 
     
     def __str__(self):
+
         return self.type + "{" + ' '.join([f"{key}: {value};" for key, value in self.items()]) + "}"
 
 
@@ -76,41 +94,86 @@ class MainWindow(QMainWindow):
     def __init__(self, size: QSize):
         super().__init__()
         self.resize(size)
-        self.max_size = size
+        self.max_size: QSize =QSize (round(1e4), round(1e4))
+        self.zoomed_size: QSize = size
+        self.move_mode = False
     
 
-    def wheelEvent(self, event: QWheelEvent | None):
+    def mousePressEvent(self, event: QMouseEvent | None):
+        if not event:
+            return
+        if event.button() != Qt.MouseButton.LeftButton:
+            event.ignore()
+            return
+        self.prev_mouse_pos = event.pos()
+        self.move_mode = True
+        event.accept()
+        print("pressed")
+    
 
+    def mouseMoveEvent(self, event: QMouseEvent | None):
+        if not event:
+            return
+        if not self.move_mode:
+            event.ignore()
+            return
+        print("moved")
+        self.move_contents(
+            self.prev_mouse_pos - event.pos(),
+            move_speed=MOVE_SPEED
+        )
+        self.prev_mouse_pos = event.pos()
+
+
+    def move_contents(self, movement: QPoint, move_speed: float = 1):
+        for widget in self.findChildren(QWidget):
+            if widget is None:
+                continue
+            pos = widget.pos()
+            new_pos = pos - movement * move_speed
+            widget.move(new_pos)
+        
+
+
+    def wheelEvent(self, event: QWheelEvent | None):
+        """Activates zoom"""
         if not event:
             return
         inverted = -1 if event.inverted() else 1
-        num_degrees_y: float = event.angleDelta().y() / 8 * inverted
-        mouse_pos = event.position()
-        zoom_rate = (1 + num_degrees_y * ZOOM_SPEED)
-        if zoom_rate:
+        num_degrees_y: float = event.angleDelta().y() * inverted / 8 
+        zoom_rate: float = scroll_degrees_y_to_zoom_rate(
+            scroll_degrees_y=num_degrees_y, 
+            zoom_in_speed=ZOOM_IN_SPEED,
+            zoom_out_speed=ZOOM_OUT_SPEED
+            )
+        if zoom_rate != 1:
             self.zoom(
-                mouse_pos.toPoint(), 
+                event.position().toPoint(), 
                 zoom_rate, 
                 min_size=MIN_WINDOW_SIZE,
-                max_size=self.max_size)
+                max_size=self.max_size
+                )
         event.accept()
 
     
     def zoom(self, center: QPoint, rate: float, min_size: QSize, max_size: QSize):
-        center_: tuple[int, int] = (center.x(), center.y())
-        current_size: tuple[int, int] = (self.size().width(), self.size().height())
-        new_size: tuple[int, int] = round(current_size[0] / rate), round(current_size[1] / rate)
-        if (new_size[0] < min_size.width() or new_size[1] < min_size.height()
-            or
-            new_size[0] > max_size.width() or new_size[1] > max_size.height()):
+        """Zoom contents of window. Zoom algorithm is same to Google Maps"""
+        zoomed_size = self.zoomed_size * rate
+        # if violates boundaries, don't update
+        if zoomed_size.boundedTo(max_size) != zoomed_size:
             return
-        print(f"{new_size=} {center_=}")
-        self.setGeometry(
-            center_[0] - new_size[0] // 2,
-            center_[1] - new_size[1] // 2,
-            new_size[0],
-            new_size[1]
-        )
+        if min_size.boundedTo(zoomed_size) != min_size:
+            return
+        self.zoomed_size = zoomed_size
+        for widget in self.findChildren(QWidget):
+            if widget is None:
+                continue
+            pos = widget.pos()
+            new_pos = (
+                round(center.x() + (pos.x() - center.x()) * rate),
+                round(center.y() + (pos.y() - center.y()) * rate)
+            )
+            widget.move(*new_pos)
 
 
 class MarketGraphWindow(MainWindow):
@@ -129,7 +192,6 @@ class MarketGraphWindow(MainWindow):
         super().__init__(size)
         self.graph: Graph = graph
         self.product_id_to_name: dict[int, str] = utils.load_json_keys_to_int("saved_data/product_id_to_name.json") # type: ignore
-        self.max_size = self.size()
     
 
     def _get_graph_max_depth(self,graph: Graph) -> int:
