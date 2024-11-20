@@ -2,7 +2,7 @@ import simcompanies_api
 import utils
 
 from PyQt6.QtCore import Qt
-from typing import TypeAlias, Optional, Any
+from typing import Any, Literal, Optional, TypeAlias
 from PyQt6.QtGui import QWheelEvent, QMouseEvent
 from PyQt6.QtCore import QSize, QPoint
 from PyQt6.QtWidgets import (QMainWindow, QPushButton, QWidget)
@@ -71,11 +71,12 @@ class StyleSheet(dict):
 class Button(QPushButton):
 
     def __init__(self, text: Optional[str] = None, parent: Optional[QWidget] = None):
+        
         super().__init__(text=text, parent=parent)
         self.stylesheet = StyleSheet("QPushButton {}")
     
 
-    def change_background_color(self, color: tuple[int, int, int]) -> None:
+    def change_background_color(self, color: tuple[int, int, int], scenario: Literal[None, "hover", "pressed"] = None) -> None:
         """
         Change background color of the button
 
@@ -85,11 +86,14 @@ class Button(QPushButton):
             RGB color to switch to
         """
         hex_color = '%02x%02x%02x' % color
-        self.stylesheet["background-color"] = "#" + hex_color
+        if not scenario:
+            self.stylesheet["background-color"] = "#" + hex_color
+        else: 
+            self.stylesheet.properties[scenario]["background-color"] = "#" + hex_color
         self.setStyleSheet(str(self.stylesheet))
     
 
-    def change_text_color(self, color: tuple[int, int, int]):
+    def change_text_color(self, color: tuple[int, int, int], scenario: Literal[None, "hover", "pressed"] = None):
         """
         Change text color of the button
 
@@ -99,7 +103,10 @@ class Button(QPushButton):
             RGB color to switch to
         """
         hex_color = '%02x%02x%02x' % color
-        self.stylesheet["color"] = "#" + hex_color
+        if not scenario:
+            self.stylesheet["color"] = "#" + hex_color
+        else: 
+            self.stylesheet.properties[scenario]["color-color"] = "#" + hex_color
         self.setStyleSheet(str(self.stylesheet))
 
 
@@ -123,7 +130,6 @@ class MainWindow(QMainWindow):
         self.prev_mouse_pos = event.pos()
         self.move_mode = True
         event.accept()
-        print("pressed")
     
 
     def mouseMoveEvent(self, event: QMouseEvent | None):
@@ -132,7 +138,6 @@ class MainWindow(QMainWindow):
         if not self.move_mode:
             event.ignore()
             return
-        print("moved")
         self.move_contents(
             self.prev_mouse_pos - event.pos(),
             move_speed=MOVE_SPEED
@@ -320,6 +325,7 @@ class MarketGraphWindow(MainWindow):
             button = Button(self.product_id_to_name[id], self)
             color = utils.get_mapped_red_to_green_color(pphpls[int(id)], 0, max_value)
             button.change_background_color(color)
+            button.setToolTip(str(round(pphpls[int(id)],1)))
             if (color[0] + color[1]) > 255 / 2:
                 button.change_text_color((0, 0, 0))
             button.move(*position)
